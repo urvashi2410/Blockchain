@@ -19,21 +19,54 @@ participants = {owner}
 
 
 def save_data():
-    with open('blockchain.txt', mode='w') as f:
-        f.write(json.dumps(blockchain))
-        f.write("\n")
-        f.write(json.dumps(open_transactions))
+    try:
+        with open('blockchain.txt', mode='w') as f:
+            f.write(json.dumps(blockchain))
+            f.write("\n")
+            f.write(json.dumps(open_transactions))
+    except:
+        print('Not able to save data')
 
 def load_data():
-    with open('blockchain.txt', mode='r') as f:
-        file_content = f.readlines()
-        global blockchain
-        global open_transactions
-        blockchain = json.loads(file_content[0][:-1])
-        open_transactions = json.loads(file_content[1])
+    try:
+        with open('blockchain.txt', mode='r') as f:
+            file_content = f.readlines()
+            global blockchain
+            global open_transactions
+            blockchain = json.loads(file_content[0][:-1])
+            updated_blockchain = []
+            for block in blockchain:
+                updated_block = {
+                    'previous_hash' : block['previous_hash'],
+                    'index' : block['index'],
+                    'proof' : block['proof'],
+                    'transactions' : [
+                        OrderedDict(
+                            [
+                                ('sender', tx['sender']), 
+                                ('recipient', tx['recipient']), 
+                                ('amount', tx['amount'])
+                            ])
+                            for tx in block['transactions']
+                    ]
+                }
+                updated_blockchain.append(updated_block)
+            blockchain = updated_blockchain
+            open_transactions = json.loads(file_content[1])
+            updated_transactions = []
+            for tx in open_transactions:
+                updated_transaction = OrderedDict(
+                            [
+                                ('sender', tx['sender']), 
+                                ('recipient', tx['recipient']), 
+                                ('amount', tx['amount'])
+                            ])
+                updated_transactions.append(updated_transaction)
+            open_transactions = updated_transactions
+    except:
+        print('Not able to fetch data !')
 
-
-load_data()
+# load_data()
 def get_transaction_value():
     '''returns the input of the user'''
     t_recipient = input("Enter recipient of the transaction:")
@@ -93,6 +126,7 @@ def add_transaction(recipient, sender = owner, amount = 1.0):
         open_transactions.append(transaction)
         participants.add(sender)
         participants.add(recipient)
+        save_data()
         return True
     return False
 
@@ -154,6 +188,8 @@ def verify_chain():
         if index == 0:
             continue
         if block['previous_hash'] != hash_block(blockchain[index - 1]):
+            return False
+        if not valid_proof(block['transactions'][:-1], block['previous_hash'], block['proof']):
             return False
         if not valid_proof(block['transactions'][:-1], block['previous_hash'], block['proof']):
             return False
