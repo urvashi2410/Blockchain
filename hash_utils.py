@@ -8,4 +8,4 @@ def hash_string_256(string):
 def hash_block(block):
     '''Generates a hash for the given block'''
     hashable_block = block.__dict__.copy()
-    return sha256(dumps(block, sort_keys=True).encode()).hexdigest()
+    return sha256(dumps(hashable_block, sort_keys=True).encode()).hexdigest()
